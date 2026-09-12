@@ -122,4 +122,6 @@ def guardar_configuracion(config: dict) -> bool:
     except OSError as error:
         print(f"Error al guardar la configuración: {error}")
         return False
+
+        
  
