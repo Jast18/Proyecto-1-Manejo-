@@ -2,8 +2,12 @@
 #Implementara una funcion mas que todo con tkinter al almacenar incluso una fotorgrafia para el usuario
 
 import tkinter as tk
-from tkinter import colorchooser, filedialog, messagebox
+from tkinter import ttk, colorchooser, filedialog, messagebox
 from core import config_manager
+
+COLOR_FONDO = "#f4f6f8"
+COLOR_ACENTO = "#3a5a78"
+COLOR_BOTON_GUARDAR = "#2e7d32"
 
 
 class SettingsWindow(tk.Toplevel):
@@ -11,7 +15,22 @@ class SettingsWindow(tk.Toplevel):
 
         super().__init__(master) # Super(). llama al constructor de la clase "tk.Toplevel" para inicializar su vetana
         self.title("Settings")
-        self.geometry("420x480")
+        self.geometry("480x680")
+        self.resizable(True, True)  # Ventana redimensionable: evita que el boton "Guardar" quede oculto si el contenido crece (ej. ruta larga de la foto)
+        self.configure(bg=COLOR_FONDO)
+
+        # tema 'clam' de ttk: a diferencia de los widgets nativos de macOS,
+        # SI respeta los colores personalizados que le indiquemos -- soluciona
+        # el problema de botones con texto invisible que tuvimos antes.
+        estilo = ttk.Style(self)
+        estilo.theme_use("clam")
+        estilo.configure("TFrame", background=COLOR_FONDO)
+        estilo.configure("TLabel", background=COLOR_FONDO, font=("Arial", 11))
+        estilo.configure("Titulo.TLabel", background=COLOR_FONDO, font=("Arial", 12, "bold"), foreground=COLOR_ACENTO)
+        estilo.configure("TRadiobutton", background=COLOR_FONDO, font=("Arial", 11))
+        estilo.configure("TButton", font=("Arial", 10), padding=6)
+        estilo.configure("Guardar.TButton", font=("Arial", 11, "bold"), foreground="white", background=COLOR_BOTON_GUARDAR)
+        estilo.map("Guardar.TButton", background=[("active", "#1b5e20")])
 
         self.al_guardar_callback = al_guardar_callback
 
@@ -22,54 +41,77 @@ class SettingsWindow(tk.Toplevel):
         self._construir_formulario(config_actual)
 
     def _construir_formulario(self, config_actual):
-        
-        tk.Label(self, text="Nombre de usuario:").pack(anchor="w", padx=10, pady=(10, 0))
-        self.entry_nombre = tk.Entry(self, width=40)
+        contenedor = ttk.Frame(self, padding=20)
+        contenedor.pack(fill="both", expand=True)
+
+        ttk.Label(contenedor, text="Configuración de usuario", style="Titulo.TLabel", font=("Arial", 16, "bold")).pack(anchor="w", pady=(0, 15))
+
+        # --- Nombre de usuario ---
+        ttk.Label(contenedor, text="Nombre de usuario", style="Titulo.TLabel").pack(anchor="w", pady=(10, 2))
+        self.entry_nombre = ttk.Entry(contenedor, width=42, font=("Arial", 11))
         self.entry_nombre.insert(0, config_actual["nombre_usuario"])
-        self.entry_nombre.pack(padx=10)
+        self.entry_nombre.pack(anchor="w", ipady=3)
 
-        #Tema de la interfaaz
-        tk.Label(self, text="Tema de interfaz:").pack(anchor="w", padx=10, pady=(10, 0))
+        ttk.Separator(contenedor).pack(fill="x", pady=15)
+
+        # --- Tema de la interfaz ---
+        ttk.Label(contenedor, text="Tema de interfaz", style="Titulo.TLabel").pack(anchor="w", pady=(0, 2))
         self.var_tema = tk.StringVar(value=config_actual["tema_interfaz"])
-        tk.Radiobutton(self, text="Claro", variable=self.var_tema, value="claro").pack(anchor="w", padx=20)
-        tk.Radiobutton(self, text="Oscuro", variable=self.var_tema, value="oscuro").pack(anchor="w", padx=20)
+        fila_tema = ttk.Frame(contenedor)
+        fila_tema.pack(anchor="w", pady=(2, 0))
+        ttk.Radiobutton(fila_tema, text="Claro", variable=self.var_tema, value="claro").pack(side="left", padx=(0, 20))
+        ttk.Radiobutton(fila_tema, text="Oscuro", variable=self.var_tema, value="oscuro").pack(side="left")
 
-        #Seleccion del idioma
-        tk.Label(self, text="Idioma:").pack(anchor="w", padx=10, pady=(10, 0))
+        ttk.Separator(contenedor).pack(fill="x", pady=15)
+
+        # --- Idioma ---
+        ttk.Label(contenedor, text="Idioma", style="Titulo.TLabel").pack(anchor="w", pady=(0, 2))
         self.var_idioma = tk.StringVar(value=config_actual["idioma"])
-        opciones_idioma = ["es", "es-ES", "en", "en-US"]
-        tk.OptionMenu(self, self.var_idioma, *opciones_idioma).pack(anchor="w", padx=10)
+        combo_idioma = ttk.Combobox(contenedor, textvariable=self.var_idioma, values=["es", "es-ES", "en", "en-US"], state="readonly", width=15, font=("Arial", 11))
+        combo_idioma.pack(anchor="w")
 
-        # Tamaño de la fuente
-        tk.Label(self, text="Tamaño de fuente:").pack(anchor="w", padx=10, pady=(10, 0))
-        self.entry_tamano_fuente = tk.Entry(self, width=10)
+        ttk.Separator(contenedor).pack(fill="x", pady=15)
+
+        # --- Tamaño de fuente ---
+        ttk.Label(contenedor, text="Tamaño de fuente", style="Titulo.TLabel").pack(anchor="w", pady=(0, 2))
+        self.entry_tamano_fuente = ttk.Entry(contenedor, width=8, font=("Arial", 11))
         self.entry_tamano_fuente.insert(0, str(config_actual["tamaño_fuente"]))
-        self.entry_tamano_fuente.pack(anchor="w", padx=10)
+        self.entry_tamano_fuente.pack(anchor="w", ipady=3)
 
-        # Color barra de menu
-        tk.Label(self, text="Color de la barra de menú:").pack(anchor="w", padx=10, pady=(10, 0))
+        ttk.Separator(contenedor).pack(fill="x", pady=15)
+
+        # --- Colores ---
+        fila_colores = ttk.Frame(contenedor)
+        fila_colores.pack(fill="x", pady=(0, 5))
+
+        col_barra = ttk.Frame(fila_colores)
+        col_barra.pack(side="left", padx=(0, 30))
+        ttk.Label(col_barra, text="Color de la barra de menú", style="Titulo.TLabel").pack(anchor="w", pady=(0, 5))
         self.boton_color_barra = tk.Button(
-            self, text="Elegir color", command=self._elegir_color_barra,
-            bg=self._rgb_a_hex(self.color_barra)
+            col_barra, text="Elegir color", command=self._elegir_color_barra,
+            bg=self._rgb_a_hex(self.color_barra), width=14, relief="flat", borderwidth=1
         )
-        self.boton_color_barra.pack(anchor="w", padx=10)
+        self.boton_color_barra.pack(anchor="w")
 
-        # Letra
-        tk.Label(self, text="Color de letra:").pack(anchor="w", padx=10, pady=(10, 0))
+        col_letra = ttk.Frame(fila_colores)
+        col_letra.pack(side="left")
+        ttk.Label(col_letra, text="Color de letra", style="Titulo.TLabel").pack(anchor="w", pady=(0, 5))
         self.boton_color_letra = tk.Button(
-            self, text="Elegir color", command=self._elegir_color_letra,
-            bg=self._rgb_a_hex(self.color_letra)
+            col_letra, text="Elegir color", command=self._elegir_color_letra,
+            bg=self._rgb_a_hex(self.color_letra), width=14, relief="flat", borderwidth=1
         )
-        self.boton_color_letra.pack(anchor="w", padx=10)
+        self.boton_color_letra.pack(anchor="w")
 
-        # Perfil
-        tk.Label(self, text="Foto de perfil:").pack(anchor="w", padx=10, pady=(10, 0))
-        self.label_ruta_foto = tk.Label(self, text=self.ruta_foto_perfil or "(ninguna seleccionada)", wraplength=380)
-        self.label_ruta_foto.pack(anchor="w", padx=10)
-        tk.Button(self, text="Seleccionar imagen...", command=self._elegir_foto).pack(anchor="w", padx=10, pady=(5, 0))
+        ttk.Separator(contenedor).pack(fill="x", pady=15)
 
-        # Almacenar los cambios seleccionados 
-        tk.Button(self, text="Guardar", command=self._guardar, bg="#4CAF50", fg="white").pack(pady=20)
+        # --- Foto de perfil ---
+        ttk.Label(contenedor, text="Foto de perfil", style="Titulo.TLabel").pack(anchor="w", pady=(0, 5))
+        self.label_ruta_foto = ttk.Label(contenedor, text=self.ruta_foto_perfil or "(ninguna seleccionada)", wraplength=420, foreground="#666666")
+        self.label_ruta_foto.pack(anchor="w", pady=(0, 8))
+        ttk.Button(contenedor, text="Seleccionar imagen...", command=self._elegir_foto).pack(anchor="w")
+
+        # --- Guardar ---
+        ttk.Button(contenedor, text="Guardar cambios", style="Guardar.TButton", command=self._guardar).pack(pady=30, ipadx=10, ipady=4)
 
     def _rgb_a_hex(self, rgb):
         return "#{:02x}{:02x}{:02x}".format(*rgb)
@@ -115,9 +157,9 @@ class SettingsWindow(tk.Toplevel):
         exito = config_manager.guardar_configuracion(nueva_config)
 
         if exito:
-            messagebox.showinfo("Settings", "Configuración guardada correctamentee")
+            messagebox.showinfo("Settings", "Configuración guardada correctamente")
             if self.al_guardar_callback:
                 self.al_guardar_callback(nueva_config)
             self.destroy()
         else:
-            messagebox.showerror("Error", "No se pudo guardar la configuración... Revisa los permisos del archivo")
+            messagebox.showerror("Error", "No se pudo guardar la configuración. Revisa los permisos del archivo")

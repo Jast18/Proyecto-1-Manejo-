@@ -1,22 +1,30 @@
-
 import tkinter as tk
-from tkinter import Menu
+from tkinter import ttk, Menu
 from gui.settings_window import SettingsWindow
+
+COLOR_ACENTO = "#3a5a78"
 
 
 class MainWindow(tk.Tk):
     def __init__(self, config_inicial: dict):
         super().__init__()
         self.title("Aplicacion de Configuracion de Usuario")
-        self.geometry("500x320")
+        self.geometry("520x360")
 
         self.config_actual = config_inicial
+
+        estilo = ttk.Style(self)
+        estilo.theme_use("clam")
+        estilo.configure("Bienvenida.TLabel", font=("Arial", 18, "bold"))
+        estilo.configure("Info.TLabel", font=("Arial", 12))
+        estilo.configure("Settings.TButton", font=("Arial", 11, "bold"), padding=10, foreground="white", background=COLOR_ACENTO)
+        estilo.map("Settings.TButton", background=[("active", "#2c4459")])
 
         self._construir_menu()
         self._construir_contenido()
         self._aplicar_configuracion_visual()
 
-    def _construir_menu(self): #Iniciamos con la construccion de el manu en barra
+    def _construir_menu(self):
         barra_menu = Menu(self)
 
         menu_archivo = Menu(barra_menu, tearoff=0)
@@ -40,24 +48,28 @@ class MainWindow(tk.Tk):
         self.config(menu=barra_menu)
 
     def _construir_contenido(self):
-        self.label_bienvenida = tk.Label(self, text="") # tk.Label exportaran los parametros de texto y la configuracion de la ventana principal
-        self.label_bienvenida.pack(pady=30) #pady = 30 nos ayuda a almacenar un espacio especificado en este caso de 30 para cada celda
+        self.tarjeta = ttk.Frame(self, padding=30)
+        self.tarjeta.pack(fill="both", expand=True)
 
-        self.label_info = tk.Label(self, text="", justify="left") #justify = "left" alineamos el texto a a izquierda
-        self.label_info.pack(pady=10)
+        self.label_bienvenida = ttk.Label(self.tarjeta, text="", style="Bienvenida.TLabel")
+        self.label_bienvenida.pack(pady=(20, 15))
+
+        self.label_info = ttk.Label(self.tarjeta, text="", justify="left", style="Info.TLabel")
+        self.label_info.pack(pady=10) # Espacio entre la información y el botón
+        ttk.Button(self.tarjeta, text="Abrir Settings", style="Settings.TButton", command=self._abrir_settings).pack(pady=25)
 
     def _abrir_settings(self):
         SettingsWindow(self, self.config_actual, al_guardar_callback=self._al_guardar)
 
     def _al_guardar(self, nueva_config: dict):
-        
+        """Callback que SettingsWindow llama despues de guardar exitosamente."""
         self.config_actual = nueva_config
         self._aplicar_configuracion_visual()
 
     def _aplicar_configuracion_visual(self):
 
-        color_fondo = "#2b2b2b" if self.config_actual["tema_interfaz"] == "oscuro" else "#f5f5f5"
-        color_texto_tema = "#ffffff" if self.config_actual["tema_interfaz"] == "oscuro" else "#000000"
+        # Ajusta colores y fuentes de la ventana principal segun la configuracion actual
+        color_fondo = "#2b2b2b" if self.config_actual["tema_interfaz"] == "oscuro" else "#ffffff"
 
         r, g, b = self.config_actual["color_letra"]
         color_letra_hex = "#{:02x}{:02x}{:02x}".format(r, g, b)
@@ -65,22 +77,18 @@ class MainWindow(tk.Tk):
         tamano = self.config_actual["tamaño_fuente"]
 
         self.configure(bg=color_fondo)
+        self.tarjeta.configure(style="Tarjeta.TFrame")
 
-        self.label_bienvenida.config(
-            text=f"Bienvenido, {self.config_actual['nombre_usuario']}",
-            font=("Arial", tamano + 4, "bold"),
-            fg=color_letra_hex,
-            bg=color_fondo,
-        )
+        estilo = ttk.Style(self)
+        estilo.configure("Tarjeta.TFrame", background=color_fondo)
+        estilo.configure("Bienvenida.TLabel", background=color_fondo, foreground=color_letra_hex, font=("Arial", tamano + 8, "bold"))
+        estilo.configure("Info.TLabel", background=color_fondo, foreground=color_letra_hex, font=("Arial", tamano))
+
+        self.label_bienvenida.config(text=f"Bienvenido, {self.config_actual['nombre_usuario']}")
 
         info = (
             f"Idioma: {self.config_actual['idioma']}\n"
             f"Tema: {self.config_actual['tema_interfaz']}\n"
             f"Tamaño de fuente: {tamano}"
         )
-        self.label_info.config(
-            text=info,
-            font=("Arial", tamano),
-            fg=color_letra_hex,
-            bg=color_fondo,
-        )
+        self.label_info.config(text=info)
